@@ -12,8 +12,9 @@ import logging
 from logging import Formatter, FileHandler
 from flask_wtf import Form
 from forms import *
-from sqlalchemy import Column, String, Integer, Boolean, ARRAY, DateTime, create_engine, ForeignKey
+# from sqlalchemy import Column, String, Integer, Boolean, ARRAY, DateTime, create_engine, ForeignKey
 from flask_migrate import Migrate
+from models import db, Venue, Artist, Show
 #----------------------------------------------------------------------------#
 # App Config.
 #----------------------------------------------------------------------------#
@@ -21,9 +22,10 @@ from flask_migrate import Migrate
 app = Flask(__name__)
 moment = Moment(app)
 app.config.from_object('config')
-db = SQLAlchemy(app)
+# db = SQLAlchemy(app)
+db.init_app(app)
 migrate = Migrate(app,db)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:2015@localhost:5432/dbfyurr'
+# app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:2015@localhost:5432/dbfyurr'
 # TODO: connect to a local postgresql database
 
 #----------------------------------------------------------------------------#
@@ -67,8 +69,9 @@ def index():
 def venues():
   # TODO: replace with real venues data.
   #       num_upcoming_shows should be aggregated based on number of upcoming shows per venue.
-  venue_data = db.session.query(Venue.city,Venue.state).all()
+  venue_data = db.session.query(Venue.city,Venue.state).group_by(Venue.city,Venue.state).all()
   data = []
+  
   for area in venue_data:
     venues_json = db.session.query(Venue.id,Venue.name,Venue.upcoming_shows_count).filter(Venue.city == area[0],Venue.state == area[1]).all()
   
@@ -77,12 +80,12 @@ def venues():
       "state": area[1],
       "venues": []
     })
-  for venue in venues_json:
-    data[2]["venues"].append({
-      "id" : venue[0],
-      "name": venue[1],
-      "num_upcoming_shows": venue[2]
-    })    
+    for venue in venues_json:
+      data[-1]["venues"].append({
+        "id" : venue[0],
+        "name": venue[1],
+        "num_upcoming_shows": venue[2]
+      })    
   return render_template('pages/venues.html', areas=data)
 
 @app.route('/venues/search', methods=['POST'])
@@ -161,35 +164,35 @@ def create_venue_form():
 
 @app.route('/venues/create', methods=['POST'])
 def create_venue_submission():
-  form = VenueForm(request.form)
+  form = VenueForm()
   try:
-    new_venue_input = Venue(
-      name = form.name.Venue,
-      genres = form.genres.Venue,
-      address = form.address.Venue,
-      city = form.city.Venue,
-      state = form.state.Venue,
-      phone = form.phone.Venue,
-      website = form.website.Venue,
-      seeking_talent = form.seeking_talent.Venue,
-      facebook_link = form.facebook_link.Venue,
-      image_link = form.image_link.Venue
-    )
-    db.session.add(new_venue_input)
-    db.session.commit()
-  # TODO: insert form data as a new Venue record in the db, instead
-  # TODO: modify data to be the data object returned from db insertion
+        new_venue_input = Venue(
+            name = form.name.data,
+            genres = form.genres.data,
+            address = form.address.data,
+            city = form.city.data,
+            state = form.state.data,
+            phone = form.phone.data,
+            website = form.website.data,
+            seeking_talent = form.seeking_talent.data,
+            facebook_link = form.facebook_link.data,
+            image_link = form.image_link.data
+        )
+        db.session.add(new_venue_input)
+        db.session.commit()
+      # TODO: insert form data as a new Venue record in the db, instead
+      # TODO: modify data to be the data object returned from db insertion
 
-  # on successful db insert, flash success
-    flash('Venue ' + request.form['name'] + ' was successfully listed!')
-  # TODO: on unsuccessful db insert, flash an error instead.
+      # on successful db insert, flash success
+        flash('Venue ' + request.form ['name'] + ' was successfully listed!')
+      # TODO: on unsuccessful db insert, flash an error instead.
   except:
-    flash('An error occurred. Venue' + new_venue_input.name + 'could not be listed.')
-  # e.g., flash('An error occurred. Venue ' + data.name + ' could not be listed.')
-  # see: http://flask.pocoo.org/docs/1.0/patterns/flashing/
-    db.session.rollback()
+        flash('An error occurred. Venue' + '' + request.form ['name'] + '' + 'could not be listed.')
+      # e.g., flash('An error occurred. Venue ' + data.name + ' could not be listed.')
+      # see: http://flask.pocoo.org/docs/1.0/patterns/flashing/
+        db.session.rollback()
   finally:
-    db.session.close()
+        db.session.close()
   return render_template('pages/home.html')
 
 @app.route('/venues/<venue_id>', methods=['DELETE'])
