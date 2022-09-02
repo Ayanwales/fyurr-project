@@ -126,7 +126,7 @@ def show_venue(venue_id):
     show_values ={
       "artist_id": show.artist.id,
       "artist_name" : show.artist.image_link,
-      "start_time" : show.start_time
+      "start_time" : show.start_time.strftime('%m/%d/%Y,%H:%M:%S')
     }
     if show.start_time <= datetime.now():
       previous_shows.append(show_values)
@@ -219,9 +219,17 @@ def delete_venue(venue_id):
 def artists():
   # TODO: replace with real data returned from querying the database
   
-  artists = db.session.query(Artist.id,Artist.name).all()
-  
-  return render_template('pages/artists.html', artists=data)
+  # artists = db.session.query(Artist.id,Artist.name).all()
+  artist_datas = Artist.query.all()
+  data = []
+  artist_json = {}
+  for artist_data in artist_datas:
+    artist_json = {
+      "id": artist_data.id,
+      "name" : artist_data.name
+    }
+    data.append(artist_json)
+  return render_template('pages/artists.html', artist_datas=data)
 
 @app.route('/artists/search', methods=['POST'])
 def search_artists():
@@ -258,14 +266,14 @@ def show_artist(artist_id):
       "venue_id": show.artist.id,
       "venue_name": show.venue.name,
       "venue_image" : show.artist.image_link,
-      "start_time" : show.start_time
+      "start_time" : show.start_time.strftime('%m/%d/%Y,%H:%M:%S')
     }
     if show.start_time <= datetime.now():
       previous_shows.append(show_values)
     else:
       next_shows.append(show_values)
 
-  artist = {
+  artist_json = {
     "id": artist.id,
     "name": artist.name,
     "genres":artist.genres,
@@ -280,10 +288,10 @@ def show_artist(artist_id):
     "past_shows":artist.previous_shows,
     "upcoming_shows":artist.next_shows,
     "past_shows_count":len(previous_shows),
-    "upcoming_shows_count":len(upcoming_shows)
+    "upcoming_shows_count":len(next_shows)
   }
 
-  return render_template('pages/show_artist.html', artist=data)
+  return render_template('pages/show_artist.html', artist=artist_json)
 
 #  Update
 #  ----------------------------------------------------------------
@@ -357,23 +365,23 @@ def edit_venue(venue_id):
 @app.route('/venues/<int:venue_id>/edit', methods=['POST'])
 def edit_venue_submission(venue_id):
   if request.method == 'POST':
-    edit_artist = Artist.query.get(request.form.get(artist_id))
+    venue = Venue.query.get(request.form.get(venue_id))
   try:
-    artist.name = request.form['name']
-    artist.genres = request.form['genres']
-    artist.state = request.form['state']
-    artist.city = request.form['city']
-    artist.address = request.form['address']
-    artist.phone = request.form['phone']
-    artist.seeking_venue = request.form['seeking_venue']
-    artist.seeking_description = request.form['seeking_description']
-    artist.facebook_link = request.form['facebook_link']
-    artist.website = request.form['website']
-    artist.image_link = request.form['image_link']
+    venue.name = request.form['name']
+    venue.genres = request.form['genres']
+    venue.state = request.form['state']
+    venue.city = request.form['city']
+    venue.address = request.form['address']
+    venue.phone = request.form['phone']
+    venue.seeking_talent = request.form['seeking_talent']
+    venue.seeking_description = request.form['seeking_description']
+    venue.facebook_link = request.form['facebook_link']
+    venue.website = request.form['website']
+    venue.image_link = request.form['image_link']
     db.session.commit()
-    flash('Artist' + request.form['name'] +'was successfully updated')
+    flash('Venue' + request.form['name'] +'was successfully updated')
   except:
-    flash('An error occurred. artist ' + request.form['name'] + ' could not be updated.', category='error')
+    flash('An error occurred. Venue ' + request.form['name'] + ' could not be updated.', category='error')
     db.session.rollback()
   finally:
     db.session.close()
@@ -432,12 +440,12 @@ def shows():
   show_values = {}
   for show in shows:
     show_values = {
-      "venue_id" : Show.venue.id,
-      "venue_name" : Show.venue.name,
-      "artist_id" : Show.artist.id,
-      "artist_name" : Show.artist.name,
-      "artist_image_link" : Show.artist.image_link,
-      "start_time" : Show.start_time
+      "venue_id" : show.venue.id,
+      "venue_name" : show.venue.name,
+      "artist_id" : show.artist.id,
+      "artist_name" : show.artist.name,
+      "artist_image_link" : show.artist.image_link,
+      "start_time" : str(show.start_time)
     }
     data.append(show_values)
   return render_template('pages/shows.html', shows=data)
@@ -455,9 +463,9 @@ def create_show_submission():
   # TODO: insert form data as a new Show record in the db, instead
   try:
     new_show = Show(
-      artist_id = form.name.Show,
-      venue_id = form.name.Show,
-      start_time = form.name.Show
+      artist_id = form.artist_id.data,
+      venue_id = form.venue_id.data,
+      start_time = form.start_time.data
     )
     db.session.add(new_show)
     db.session.commit()
