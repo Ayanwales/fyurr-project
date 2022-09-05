@@ -94,24 +94,7 @@ def venues():
     })
 
   
-  
-  #venue_data = db.session.query(Venue.city,Venue.state).group_by(Venue.city,Venue.state).all()
-  #data = []
-  
-  #for area in venue_data:
-   # venues_json = db.session.query(Venue.id,Venue.name,Venue.upcoming_shows_count).filter(Venue.city == area[0],Venue.state == area[1]).all()
-  
-    #data.append({
-     # "city": area[0],
-      #"state": area[1],
-      #"venues": []
-    #})
-   # for venue in venues_json:
-    #  data[-1]["venues"].append({
-     #   "id" : venue[0],
-      #  "name": venue[1],
-       # "num_upcoming_shows": venue[2]
-      #})    
+      
   return render_template('pages/venues.html', areas=data)
 
 @app.route('/venues/search', methods=['POST'])
