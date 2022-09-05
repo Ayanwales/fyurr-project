@@ -69,23 +69,49 @@ def index():
 def venues():
   # TODO: replace with real venues data.
   #       num_upcoming_shows should be aggregated based on number of upcoming shows per venue.
-  venue_data = db.session.query(Venue.city,Venue.state).group_by(Venue.city,Venue.state).all()
-  data = []
-  
-  for area in venue_data:
-    venues_json = db.session.query(Venue.id,Venue.name,Venue.upcoming_shows_count).filter(Venue.city == area[0],Venue.state == area[1]).all()
-  
-    data.append({
-      "city": area[0],
-      "state": area[1],
-      "venues": []
+  # query the venue parameters
+  venue_data = Venue.query.all()
+  # creating empty json/dictionary
+  venue_json = {}
+  # looping through the data
+  for venue_single in venue_data:
+    key = f'{venue_single},{venue_single.state}'
+
+    venue_json.setdefault(key,[]).append({
+      "id": venue_single.id,
+      "name": venue_single.name,
+      "num_upcoming_shows" : len(venue_single.shows),
+      "city": venue_single.city,
+      "state": venue_single.state
     })
-    for venue in venues_json:
-      data[-1]["venues"].append({
-        "id" : venue[0],
-        "name": venue[1],
-        "num_upcoming_shows": venue[2]
-      })    
+  
+  data = []
+  for value in venue_json.values():
+    data.append({
+      "city": value[0]['city'],
+      "state": value[0]['state'],
+      "venues": value
+    })
+
+  
+  
+  #venue_data = db.session.query(Venue.city,Venue.state).group_by(Venue.city,Venue.state).all()
+  #data = []
+  
+  #for area in venue_data:
+   # venues_json = db.session.query(Venue.id,Venue.name,Venue.upcoming_shows_count).filter(Venue.city == area[0],Venue.state == area[1]).all()
+  
+    #data.append({
+     # "city": area[0],
+      #"state": area[1],
+      #"venues": []
+    #})
+   # for venue in venues_json:
+    #  data[-1]["venues"].append({
+     #   "id" : venue[0],
+      #  "name": venue[1],
+       # "num_upcoming_shows": venue[2]
+      #})    
   return render_template('pages/venues.html', areas=data)
 
 @app.route('/venues/search', methods=['POST'])
@@ -352,7 +378,7 @@ def edit_venue(venue_id):
     venue.city = request.form['city']
     venue.address = request.form['address']
     venue.phone = request.form['phone']
-    venue.seeking_venue = request.form['seeking_venue']
+    venue.seeking_talent = request.form['seeking_talent']
     venue.seeking_description = request.form['seeking_description']
     venue.facebook_link = request.form['facebook_link']
     venue.website = request.form['website']
@@ -435,7 +461,7 @@ def create_artist_submission():
 def shows():
   # displays list of shows at /shows
   # TODO: replace with real venues data.
-  shows = Shows.query.all()
+  shows = Show.query.all()
   data = []
   show_values = {}
   for show in shows:
@@ -445,7 +471,7 @@ def shows():
       "artist_id" : show.artist.id,
       "artist_name" : show.artist.name,
       "artist_image_link" : show.artist.image_link,
-      "start_time" : str(show.start_time)
+      "start_time" : show.start_time.strftime('%d/%m/Y,%H:%M:%S')
     }
     data.append(show_values)
   return render_template('pages/shows.html', shows=data)
